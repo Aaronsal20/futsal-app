@@ -1,0 +1,21 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+:global([data-mantine-color-scheme='dark']) .layout {
+  background-color: var(--mantine-color-dark-8);
+}
+
+.main {
+  flex: 1;
+  padding: 1rem;
+}
+
+/* Mobile: Stack navbar on top */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+}

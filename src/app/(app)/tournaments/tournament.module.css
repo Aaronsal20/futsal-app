@@ -1,0 +1,121 @@
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 500px;
+  margin: 0 auto;
+  background-color: #f7f7f7;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.team-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.match-timer {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 16px 0;
+  gap: 20px;
+}
+
+.team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timer {
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.event {
+  font-size: 0.85rem;
+  color: #444;
+  margin-top: 2px;
+}
+
+.fixture-item {
+  border: 1px solid #eee;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.fixture-item:hover {
+  border-color: #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.score-badge {
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.squad-card {
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.squad-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.player-row {
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.player-row:last-child {
+  border-bottom: none;
+}
+
+.event-timeline {
+  position: relative;
+  padding-left: 20px;
+}
+
+.event-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e9ecef;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.champion-row {
+  background-color: #fff9db !important;
+}
+

@@ -1,0 +1,24 @@
+.loginContainer {
+  margin: 0 auto;            /* center horizontally */
+  min-height: 100vh;         /* full viewport height */
+  display: flex;             /* for vertical centering of inner card */
+  align-items: center;       /* vertical center */
+  justify-content: center;   /* horizontal center of inner content */
+  background: #f3f4f6;       /* similar to Tailwind's gray-100 */
+  box-sizing: border-box;
+  padding: 24px;             /* breathing room on small screens */
+}
+
+/* Optional: make it friendlier on small screens */
+@media (max-width: 768px) {
+  .loginContainer {
+    width: 90%;
+    padding: 16px;
+  }
+}
+
+/* Optional: constrain the card itself */
+.loginCard {
+  width: 100%;
+  max-width: 520px;          /* prevent it from getting too wide */
+}

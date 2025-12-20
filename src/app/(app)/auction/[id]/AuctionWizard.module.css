@@ -1,0 +1,51 @@
+.container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--mantine-color-gray-2);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-md);
+  border-color: var(--mantine-color-blue-3);
+}
+
+.selectedCard {
+  border-color: var(--mantine-color-blue-5);
+  background-color: var(--mantine-color-blue-0);
+  transform: scale(1.02);
+}
+
+.stepContent {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gradientText {
+  background: linear-gradient(45deg, var(--mantine-color-blue-6), var(--mantine-color-cyan-6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.heroIcon {
+  background: linear-gradient(135deg, var(--mantine-color-blue-1) 0%, var(--mantine-color-cyan-0) 100%);
+  border-radius: 50%;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--mantine-shadow-sm);
+}
