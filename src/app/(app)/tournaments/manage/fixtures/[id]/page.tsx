@@ -99,7 +99,7 @@ export default function TournamentFixturesSetup() {
       }
 
       // 2. Fetch Teams (try tournament_id first, then auction_id)
-      let query = supabase
+      const query = supabase
         .from('teams')
         .select(`
           id,

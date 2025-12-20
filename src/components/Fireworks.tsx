@@ -12,7 +12,7 @@ export default function Fireworks({ duration = 5000, onComplete }: { duration?: 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let particles: Particle[] = [];
+    const particles: Particle[] = [];
     let animationId: number;
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff', '#ffffff', '#ffa500'];
 
@@ -71,7 +71,7 @@ export default function Fireworks({ duration = 5000, onComplete }: { duration?: 
       }
     };
 
-    let startTime = Date.now();
+    const startTime = Date.now();
     let lastFireworkTime = 0;
 
     const animate = () => {
@@ -108,7 +108,7 @@ export default function Fireworks({ duration = 5000, onComplete }: { duration?: 
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(animationId);
     };
-  }, [duration]);
+  }, [duration, onComplete]);
 
   return (
     <canvas

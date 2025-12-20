@@ -122,7 +122,7 @@ export default function TeamsPage() {
   const handleAddGuest = (name: string, ratingValue?: number) => {
     const rating = ratingValue !== undefined ? ratingValue : (typeof guestRating === 'number' ? guestRating : parseFloat(guestRating) || 6.0);
     
-    const newGuest: any = {
+    const newGuest: Player = {
       id: Date.now() + Math.floor(Math.random() * 1000), // Temp ID
       first_name: name,
       last_name: '(Guest)',

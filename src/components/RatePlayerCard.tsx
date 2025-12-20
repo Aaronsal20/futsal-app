@@ -1,5 +1,6 @@
 'use client';
 import Player from "@/types/player";
+import Image from "next/image";
 
 type RatePlayerCardProps = {
   player: Player;
@@ -11,10 +12,12 @@ type RatePlayerCardProps = {
 export default function RatePlayerCard({ player, selected, onRate }: RatePlayerCardProps) {
   return (
     <div className="flex items-center space-x-4 border p-4 rounded">
-      <img
+      <Image
         src={player.avatar_url || 'https://via.placeholder.com/40'}
         alt={player.name}
-        className="w-16 h-16 rounded-full"
+        width={64}
+        height={64}
+        className="rounded-full"
       />
       <div className="flex-1">
         <div className="font-medium">{player.name}</div>

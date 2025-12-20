@@ -27,7 +27,7 @@ export default function ConfirmPage() {
           }
         })
     }
-  }, [])
+  }, [router, searchParams])
 
   return <p>Confirming email... Please wait.</p>
 }
