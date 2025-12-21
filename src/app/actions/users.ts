@@ -47,3 +47,38 @@ export async function createUser(formData: any) {
     return { success: false, error: error.message }
   }
 }
+
+export async function getUsers() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+        *,
+        player:player_id (
+          first_name,
+          last_name
+        )
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { success: true, data }
+  } catch (error: any) {
+    console.error('Get users error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function resetUserPassword(userId: string, newPassword: string) {
+  try {
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    })
+
+    if (error) throw error
+    return { success: true }
+  } catch (error: any) {
+    console.error('Reset password error:', error)
+    return { success: false, error: error.message }
+  }
+}

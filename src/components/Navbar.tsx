@@ -19,6 +19,7 @@ import {
   IconCalendarEvent,
   IconSettings,
   IconMenu2,
+  IconLogin,
 } from '@tabler/icons-react'
 import { Group, Collapse, UnstyledButton, Text, ScrollArea, ActionIcon } from '@mantine/core'
 import classes from './Navbar.module.css'
@@ -38,13 +39,14 @@ const adminLinks = [
   { link: '/admin/players', label: 'Manage Players', icon: IconDatabase },
   // { link: '/admin/teams', label: 'Manage Teams', icon: IconUsersGroup },
   { link: '/tournaments/manage', label: 'Tournaments', icon: IconTrophy },
-  { link: '/admin/users/create', label: 'Create User', icon: IconUserPlus },
+  { link: '/admin/users', label: 'Manage Users', icon: IconUserPlus },
 ]
 
 export default function Navbar() {
   const pathname = usePathname()
   const [isAdmin, setIsAdmin] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [session, setSession] = useState<any>(null)
   
   // Collapsible states
   const [linksOpened, setLinksOpened] = useState<Record<string, boolean>>({
@@ -55,19 +57,35 @@ export default function Navbar() {
   const router = useRouter()
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      const { data } = await supabase.auth.getUser()
-      const userId = data.user?.id
-      if (!userId) return
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      setIsAdmin(userProfile?.role === 'admin')
-    }
-    fetchUserRole()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      if (session?.user) {
+        fetchUserRole(session.user.id)
+      }
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      if (session?.user) {
+        fetchUserRole(session.user.id)
+      } else {
+        setIsAdmin(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
+
+  const fetchUserRole = async (userId: string) => {
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    setIsAdmin(userProfile?.role === 'admin')
+  }
 
   const toggleLink = (key: string) => {
     setLinksOpened((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -199,10 +217,17 @@ export default function Navbar() {
 
         {/* FOOTER */}
         <div className={classes.footer}>
-          <button onClick={onLogout} className={classes.logoutBtn}>
-            <IconLogout size={18} stroke={1.5} />
-            <span>Logout</span>
-          </button>
+          {session ? (
+            <button onClick={onLogout} className={classes.logoutBtn}>
+              <IconLogout size={18} stroke={1.5} />
+              <span>Logout</span>
+            </button>
+          ) : (
+            <Link href="/login" className={classes.logoutBtn} onClick={() => setIsOpen(false)}>
+              <IconLogin size={18} stroke={1.5} />
+              <span>Login</span>
+            </Link>
+          )}
         </div>
       </nav>
     </>

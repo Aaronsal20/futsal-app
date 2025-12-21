@@ -13,17 +13,34 @@ import {
   Card, 
   Box,
   rem,
-  Paper
+  Paper,
+  Badge,
+  Overlay
 } from '@mantine/core';
 import { supabase } from '@/lib/supabase'
 import PlayerCard from '@/components/PlayerCard';
-import { IconTrophy, IconUsers, IconGavel, IconArrowRight, IconBallFootball, IconChartBar } from '@tabler/icons-react';
+import { IconTrophy, IconUsers, IconGavel, IconArrowRight, IconBallFootball, IconChartBar, IconVideo, IconLogin, IconUserPlus } from '@tabler/icons-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function HomePage() {
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const fetchPlayers = async () => {
     setLoading(true);
@@ -104,20 +121,44 @@ export default function HomePage() {
               </Box>
 
               <Group>
-                <Button 
-                  component={Link} 
-                  href="/tournaments" 
-                  size="lg" 
-                  color="green"
-                  rightSection={<IconArrowRight size={18} />}
-                >
-                  View Tournaments
-                </Button>
+                {session ? (
+                  <Button 
+                    component={Link} 
+                    href="/tournaments" 
+                    size="lg" 
+                    color="green"
+                    rightSection={<IconArrowRight size={18} />}
+                  >
+                    View Tournaments
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      component={Link} 
+                      href="/register" 
+                      size="lg" 
+                      color="green"
+                      leftSection={<IconUserPlus size={18} />}
+                    >
+                      Get Started
+                    </Button>
+                    <Button 
+                      component={Link} 
+                      href="/login" 
+                      size="lg" 
+                      variant="outline" 
+                      color="white"
+                      leftSection={<IconLogin size={18} />}
+                    >
+                      Login
+                    </Button>
+                  </>
+                )}
                 <Button 
                   component={Link} 
                   href="/players" 
                   size="lg" 
-                  variant="outline" 
+                  variant="subtle" 
                   color="gray" 
                   c="white"
                 >
@@ -143,6 +184,41 @@ export default function HomePage() {
       </Box>
 
       <Container size="lg" py={60}>
+        {/* Live Feed Section */}
+        <Box mb={80}>
+          <Group justify="space-between" mb="xl">
+            <Group>
+              <ThemeIcon color="red" variant="light" size="lg">
+                <IconVideo size={20} />
+              </ThemeIcon>
+              <Title order={2}>Live Feed</Title>
+              <Badge color="red" variant="filled" size="lg" className="animate-pulse">LIVE</Badge>
+            </Group>
+            <Button component={Link} href="/live" variant="subtle" rightSection={<IconArrowRight size={16} />}>
+              Watch All
+            </Button>
+          </Group>
+          
+          <Card padding="0" radius="md" withBorder shadow="sm">
+            <Box h={400} bg="black" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <Stack align="center" gap="xs">
+                <IconVideo size={64} color="white" style={{ opacity: 0.5 }} />
+                <Text c="dimmed">Live Stream Placeholder</Text>
+              </Stack>
+              <Overlay color="#000" backgroundOpacity={0.3} />
+              <Box style={{ position: 'absolute', bottom: 20, left: 20, right: 20, zIndex: 2 }}>
+                <Group justify="space-between" align="flex-end">
+                  <Box>
+                    <Text c="white" fw={700} size="xl">FC Barcelona vs Real Madrid</Text>
+                    <Text c="gray.3" size="sm">Champions League Final - Group A</Text>
+                  </Box>
+                  <Badge color="red" size="lg">2nd Half - 35:00</Badge>
+                </Group>
+              </Box>
+            </Box>
+          </Card>
+        </Box>
+
         {/* Quick Actions */}
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" mb={80}>
           <Paper p="xl" radius="md" withBorder shadow="sm" style={{ transition: 'transform 0.2s' }} className="hover:scale-105">
