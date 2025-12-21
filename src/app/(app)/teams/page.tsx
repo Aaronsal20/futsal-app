@@ -78,27 +78,69 @@ export default function TeamsPage() {
   };
 
   const handleParse = () => {
-    const names = pasteContent.split(/[\n,]+/).map(n => n.trim()).filter(n => n);
+    // 1. Parse the content
+    let names: string[] = [];
+    const lines = pasteContent.split('\n');
+    let isWaitingList = false;
+    let foundNumberedList = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      if (trimmed.toLowerCase().includes('waiting list')) {
+        isWaitingList = true;
+        continue;
+      }
+
+      if (isWaitingList) continue;
+
+      // Match numbered lines: "1. Name", "10. Name"
+      const match = trimmed.match(/^\d+\.\s*(.+)/);
+      if (match) {
+        foundNumberedList = true;
+        // Remove invisible chars (like U+2060 WORD JOINER) and trim
+        const name = match[1].replace(/[\u200B-\u200D\uFEFF\u2060]/g, '').trim();
+        if (name) {
+          names.push(name);
+        }
+      }
+    }
+
+    // Fallback to simple split if no numbered list structure was found
+    if (!foundNumberedList) {
+      names = pasteContent.split(/[\n,]+/).map(n => n.trim()).filter(n => n);
+    }
+
     const newSelected: number[] = [];
     const notFound: string[] = [];
 
     names.forEach(name => {
+      const cleanName = name.toLowerCase();
+
       // 1. Try exact full name match
       let match = players.find(p => 
-        `${p.first_name} ${p.last_name}`.toLowerCase() === name.toLowerCase()
+        `${p.first_name} ${p.last_name}`.toLowerCase() === cleanName
       );
       
       // 2. Try exact first name match
       if (!match) {
         match = players.find(p => 
-          p.first_name.toLowerCase() === name.toLowerCase()
+          p.first_name.toLowerCase() === cleanName
         );
       }
 
-      // 3. Try partial match (if name is long enough)
-      if (!match && name.length > 3) {
+      // 3. Try partial match: Player name contains input name
+      if (!match && cleanName.length > 3) {
          match = players.find(p => 
-          `${p.first_name} ${p.last_name}`.toLowerCase().includes(name.toLowerCase())
+          `${p.first_name} ${p.last_name}`.toLowerCase().includes(cleanName)
+        );
+      }
+
+      // 4. Try reverse partial match: Input name contains player first name
+      // Useful for "Sticks bitch 🦮🚶🏻‍♂️" matching "Sticks"
+      if (!match) {
+        match = players.find(p => 
+          cleanName.includes(p.first_name.toLowerCase()) && p.first_name.length > 2
         );
       }
 
@@ -128,7 +170,7 @@ export default function TeamsPage() {
       last_name: '(Guest)',
       avg_rating: rating,
       position: 'guest',
-      avatar_url: undefined
+      avatar_url: null
     };
 
     setPlayers(prev => [newGuest, ...prev]);
