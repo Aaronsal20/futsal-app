@@ -1,8 +1,10 @@
 'use client';
 
 import { MantineProvider, ActionIcon, Group, useMantineColorScheme } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import { IconSun, IconMoon } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
+import '@mantine/notifications/styles.css';
 
 function ThemeToggle() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
@@ -39,6 +41,7 @@ function ThemeToggle() {
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider defaultColorScheme="light">
+      <Notifications />
       <ThemeToggle />
       {children}
     </MantineProvider>
