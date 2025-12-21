@@ -37,7 +37,7 @@ const eventLinks = [
 const adminLinks = [
   { link: '/admin/players', label: 'Manage Players', icon: IconDatabase },
   // { link: '/admin/teams', label: 'Manage Teams', icon: IconUsersGroup },
-  { link: 'tournaments/manage', label: 'Tournaments', icon: IconTrophy },
+  { link: '/tournaments/manage', label: 'Tournaments', icon: IconTrophy },
   { link: '/admin/users/create', label: 'Create User', icon: IconUserPlus },
 ]
 
