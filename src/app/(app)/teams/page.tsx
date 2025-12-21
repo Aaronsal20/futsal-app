@@ -128,7 +128,7 @@ export default function TeamsPage() {
       last_name: '(Guest)',
       avg_rating: rating,
       position: 'guest',
-      avatar_url: null
+      avatar_url: undefined
     };
 
     setPlayers(prev => [newGuest, ...prev]);

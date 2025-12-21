@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
-export default function ConfirmPage() {
+function ConfirmContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -30,4 +30,12 @@ export default function ConfirmPage() {
   }, [router, searchParams])
 
   return <p>Confirming email... Please wait.</p>
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <ConfirmContent />
+    </Suspense>
+  )
 }
