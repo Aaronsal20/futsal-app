@@ -21,8 +21,8 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
-import { IconPlus, IconKey, IconTrash, IconSearch } from '@tabler/icons-react'
-import { createUser, getUsers, resetUserPassword } from '@/app/actions/users'
+import { IconPlus, IconKey, IconTrash, IconSearch, IconCheck } from '@tabler/icons-react'
+import { createUser, getUsers, resetUserPassword, approveUser } from '@/app/actions/users'
 
 export default function ManageUsersPage() {
   const [users, setUsers] = useState<any[]>([])
@@ -31,10 +31,8 @@ export default function ManageUsersPage() {
   
   // Create User Modal State
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false)
-  const [players, setPlayers] = useState<any[]>([])
   const [createLoading, setCreateLoading] = useState(false)
   const [createFormData, setCreateFormData] = useState({
-    playerId: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -51,7 +49,6 @@ export default function ManageUsersPage() {
 
   useEffect(() => {
     fetchUsers()
-    fetchPlayers()
   }, [])
 
   const fetchUsers = async () => {
@@ -69,36 +66,18 @@ export default function ManageUsersPage() {
     setLoading(false)
   }
 
-  const fetchPlayers = async () => {
-    const { data } = await supabase
-      .from('player')
-      .select('id, first_name, last_name')
-      .order('first_name')
-    
-    if (data) {
-      setPlayers(data.map(p => ({
-        value: p.id.toString(),
-        label: `${p.first_name} ${p.last_name}`,
-        original: p
-      })))
-    }
-  }
-
-  const handlePlayerChange = (value: string | null) => {
-    if (!value) return
-    const player = players.find(p => p.value === value)?.original
-    if (player) {
-      setCreateFormData(prev => ({
-        ...prev,
-        playerId: value,
-        firstName: player.first_name,
-        lastName: player.last_name
-      }))
-    }
-  }
-
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!createFormData.email && !createFormData.phone) {
+      notifications.show({ 
+        title: 'Error', 
+        message: 'Either Email or Phone is required', 
+        color: 'red' 
+      })
+      return
+    }
+
     setCreateLoading(true)
     try {
       const result = await createUser(createFormData)
@@ -107,7 +86,6 @@ export default function ManageUsersPage() {
       notifications.show({ title: 'Success', message: 'User created successfully', color: 'green' })
       closeCreate()
       setCreateFormData({
-        playerId: '',
         firstName: '',
         lastName: '',
         email: '',
@@ -142,8 +120,21 @@ export default function ManageUsersPage() {
     }
   }
 
+  const handleApprove = async (userId: string) => {
+    try {
+      const result = await approveUser(userId)
+      if (!result.success) throw new Error(result.error)
+
+      notifications.show({ title: 'Success', message: 'User approved successfully', color: 'green' })
+      fetchUsers()
+    } catch (error: any) {
+      notifications.show({ title: 'Error', message: error.message, color: 'red' })
+    }
+  }
+
   const filteredUsers = users.filter(user => 
     user.email?.toLowerCase().includes(search.toLowerCase()) ||
+    user.phone?.includes(search) ||
     user.first_name?.toLowerCase().includes(search.toLowerCase()) ||
     user.last_name?.toLowerCase().includes(search.toLowerCase())
   )
@@ -174,6 +165,7 @@ export default function ManageUsersPage() {
               <Table.Th>Name</Table.Th>
               <Table.Th>Email</Table.Th>
               <Table.Th>Role</Table.Th>
+              <Table.Th>Status</Table.Th>
               <Table.Th>Linked Player</Table.Th>
               <Table.Th>Actions</Table.Th>
             </Table.Tr>
@@ -191,10 +183,17 @@ export default function ManageUsersPage() {
               filteredUsers.map((user) => (
                 <Table.Tr key={user.id}>
                   <Table.Td>{user.first_name} {user.last_name}</Table.Td>
-                  <Table.Td>{user.email}</Table.Td>
+                  <Table.Td>
+                    {user.email || user.phone || <Text c="dimmed">No contact info</Text>}
+                  </Table.Td>
                   <Table.Td>
                     <Badge color={user.role === 'admin' ? 'red' : 'blue'}>
                       {user.role}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color={user.is_approved ? 'green' : 'yellow'}>
+                      {user.is_approved ? 'Active' : 'Pending'}
                     </Badge>
                   </Table.Td>
                   <Table.Td>
@@ -219,6 +218,16 @@ export default function ManageUsersPage() {
                       >
                         <IconKey size={18} />
                       </ActionIcon>
+                      {!user.is_approved && (
+                        <ActionIcon 
+                          variant="light" 
+                          color="green" 
+                          onClick={() => handleApprove(user.id)}
+                          title="Approve User"
+                        >
+                          <IconCheck size={18} />
+                        </ActionIcon>
+                      )}
                     </Group>
                   </Table.Td>
                 </Table.Tr>
@@ -232,16 +241,6 @@ export default function ManageUsersPage() {
       <Modal opened={createOpened} onClose={closeCreate} title="Create New User" size="lg">
         <form onSubmit={handleCreateSubmit}>
           <Stack>
-            <Select
-              label="Link to Player (Optional)"
-              placeholder="Select a player"
-              data={players}
-              searchable
-              value={createFormData.playerId}
-              onChange={handlePlayerChange}
-              clearable
-            />
-            
             <Group grow>
               <TextInput
                 label="First Name"
@@ -259,7 +258,6 @@ export default function ManageUsersPage() {
 
             <TextInput
               label="Email"
-              required
               type="email"
               value={createFormData.email}
               onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })}

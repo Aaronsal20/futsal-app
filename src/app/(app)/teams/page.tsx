@@ -37,10 +37,13 @@ import {
   IconClipboard,
   IconPlus,
   IconAlertCircle,
-  IconUserPlus
+  IconUserPlus,
+  IconRobot
 } from '@tabler/icons-react';
 import { PlayerWithRating as Player } from '@/types/player';
 import { generateBalancedTeams } from '@/utils/teamGenerator';
+import { analyzeTeams } from '@/app/actions/ai';
+import ReactMarkdown from 'react-markdown';
 
 export default function TeamsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -58,6 +61,11 @@ export default function TeamsPage() {
   const [manualGuestModalOpen, setManualGuestModalOpen] = useState(false);
   const [manualGuestName, setManualGuestName] = useState('');
   const [manualGuestRating, setManualGuestRating] = useState<number | string>(6.0);
+
+  // AI Analysis State
+  const [analysis, setAnalysis] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -190,9 +198,27 @@ export default function TeamsPage() {
   const handleGenerate = () => {
     const selectedPlayers = players.filter((p) => selected.includes(p.id));
     try {
-      setTeams(generateBalancedTeams(selectedPlayers));
-    } catch (err) {
-      alert((err as Error).message);
+      const balancedTeams = generateBalancedTeams(selectedPlayers);
+      setTeams(balancedTeams);
+      setAnalysis(''); // Clear previous analysis
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    setAnalyzing(true);
+    setAnalysisModalOpen(true);
+    try {
+      const result = await analyzeTeams(teams);
+      if (result.success && result.analysis) {
+        setAnalysis(result.analysis);
+      }
+    } catch (error) {
+      console.error(error);
+      setAnalysis('Failed to analyze teams.');
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -349,6 +375,7 @@ export default function TeamsPage() {
             </Box>
           </>
         ) : (
+          <>
           <Grid gutter="xl">
             {teams.map((team, idx) => (
               <Grid.Col span={{ base: 12, md: 6 }} key={idx}>
@@ -380,8 +407,51 @@ export default function TeamsPage() {
               </Grid.Col>
             ))}
           </Grid>
+          <Group justify="center" mt="xl">
+            <Button 
+              leftSection={<IconRobot size={20} />} 
+              variant="gradient" 
+              gradient={{ from: 'violet', to: 'grape' }}
+              size="md"
+              onClick={handleAnalyze}
+            >
+              Analyze Teams with AI Coach
+            </Button>
+            <Button 
+              leftSection={<IconRefresh size={20} />} 
+              variant="subtle" 
+              color="gray" 
+              onClick={() => setTeams([])}
+            >
+              Reset / Start Over
+            </Button>
+          </Group>
+          </>
         )}
       </Stack>
+
+      <Modal 
+        opened={analysisModalOpen} 
+        onClose={() => setAnalysisModalOpen(false)}
+        title={<Group><IconRobot color="violet" /><Title order={3}>AI Coach Analysis</Title></Group>}
+        size="lg"
+      >
+        {analyzing ? (
+          <Stack align="center" py="xl">
+            <ThemeIcon size={60} radius="xl" variant="light" color="violet">
+              <IconRobot size={32} className="animate-pulse" />
+            </ThemeIcon>
+            <Text>Analyzing team compositions...</Text>
+          </Stack>
+        ) : (
+          <ScrollArea h={400}>
+            <Box style={{ whiteSpace: 'pre-wrap' }}>
+               {/* Simple rendering for now, in real app use ReactMarkdown */}
+               <Text>{analysis}</Text>
+            </Box>
+          </ScrollArea>
+        )}
+      </Modal>
 
       <Modal 
         opened={parseModalOpen} 
@@ -474,6 +544,42 @@ export default function TeamsPage() {
           <Button onClick={handleManualAddGuest} fullWidth mt="md">
             Add Guest
           </Button>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={analysisModalOpen}
+        onClose={() => setAnalysisModalOpen(false)}
+        title={<Title order={3}>AI Analysis of Teams</Title>}
+        size="lg"
+      >
+        <Stack>
+          <Text size="sm" c="dimmed">
+            Analysis results for the generated teams. This uses AI to evaluate balance, synergy, and potential performance.
+          </Text>
+
+          <Button 
+            onClick={handleAnalyze} 
+            fullWidth 
+            loading={analyzing} 
+            disabled={!teams.length}
+          >
+            {analyzing ? 'Analyzing...' : 'Analyze Teams'}
+          </Button>
+
+          <Divider />
+
+          {analysis ? (
+            <ScrollArea style={{ height: 300 }}>
+              <Text size="sm" c="dimmed">
+                <ReactMarkdown>{analysis}</ReactMarkdown>
+              </Text>
+            </ScrollArea>
+          ) : (
+            <Text size="sm" c="dimmed" align="center" py="xl">
+              No analysis available yet. Generate teams and click "Analyze Teams".
+            </Text>
+          )}
         </Stack>
       </Modal>
     </Container>

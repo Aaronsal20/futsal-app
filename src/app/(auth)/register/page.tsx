@@ -12,79 +12,104 @@ import {
   Title,
   Text,
   Group,
+  SegmentedControl,
+  Stack,
+  Anchor
 } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [position, setPosition] = useState<string | null>(null)
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   const handleRegister = async () => {
-    setError('')
+    setLoading(true)
 
-    // Step 1: Sign up the user
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          position,
+    try {
+      // Step 1: Sign up the user
+      const signUpPayload = {
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            position,
+            phone: authMethod === 'phone' ? phone : undefined,
+            is_approved: false
+          },
         },
-      },
-    })
-
-    if (signUpError) return setError(signUpError.message)
-
-    if (data.user) {
-      // Step 2: Insert user into `users` table
-      const { error: insertUserError } = await supabase.from('users').insert({
-        id: data.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName
-      })
-
-      if (insertUserError) {
-        setError(insertUserError.message)
-        return
       }
 
-      // Step 3: Check if a player already exists
-      const { data: existingPlayers, error: playerCheckError } = await supabase
-        .from('player')
-        .select('id')
-        .eq('first_name', firstName)
-        .eq('last_name', lastName)
+      const { data, error: signUpError } = await supabase.auth.signUp(
+        authMethod === 'email' 
+          ? { email, ...signUpPayload } 
+          : { phone, ...signUpPayload }
+      )
 
-      if (playerCheckError) {
-        setError(playerCheckError.message)
-        return
-      }
+      if (signUpError) throw signUpError
 
-      // Step 4: Create player if not found
-      if (!existingPlayers || existingPlayers.length === 0) {
-        const { error: insertPlayerError } = await supabase.from('player').insert({
+      if (data.user) {
+        // Step 2: Check if a player already exists or create one
+        let playerId: number
+
+        const { data: existingPlayers, error: playerCheckError } = await supabase
+          .from('player')
+          .select('id')
+          .ilike('first_name', firstName)
+          .ilike('last_name', lastName)
+          .single()
+
+        if (existingPlayers) {
+          playerId = existingPlayers.id
+        } else {
+          const { data: newPlayer, error: insertPlayerError } = await supabase
+            .from('player')
+            .insert({
+              first_name: firstName,
+              last_name: lastName,
+              position,
+              avatar_url: '', // Optional: Set a default avatar URL
+            })
+            .select('id')
+            .single()
+
+          if (insertPlayerError) throw insertPlayerError
+          playerId = newPlayer.id
+        }
+
+        // Step 3: Insert user into `users` table with player link
+        const { error: insertUserError } = await supabase.from('users').insert({
+          id: data.user.id,
+          email: authMethod === 'email' ? email : null,
+          phone: authMethod === 'phone' ? phone : null,
           first_name: firstName,
           last_name: lastName,
-          position,
-          avatar_url: '', // Optional: Set a default avatar URL
+          is_approved: false,
+          player_id: playerId
         })
 
-          console.log('🚀 ~ handleRegister ~ insertPlayerError:', insertPlayerError)
-        if (insertPlayerError) {
-          setError(insertPlayerError.message)
-          return
-        }
-      }
+        if (insertUserError) throw insertUserError
 
-      // Step 5: Redirect to login
-      router.push('/login')
+        // Update user metadata with player_id
+        await supabase.auth.updateUser({
+          data: { player_id: playerId }
+        })
+
+        notifications.show({ title: 'Success', message: 'Registration successful! Please check your email/phone for verification.', color: 'green' })
+        // Step 4: Redirect to login
+        router.push('/login')
+      }
+    } catch (error: any) {
+      notifications.show({ title: 'Error', message: error.message, color: 'red' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -96,73 +121,86 @@ export default function RegisterPage() {
           📝 Register for Futsal
         </Title>
 
-        <Group grow mb="md">
-          <TextInput
-            label="First Name"
-            placeholder="Enter first name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.currentTarget.value)}
+        <Stack>
+          <Group grow>
+            <TextInput
+              label="First Name"
+              placeholder="Enter first name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label="Last Name"
+              placeholder="Enter last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.currentTarget.value)}
+              required
+            />
+          </Group>
+
+          <SegmentedControl
+            value={authMethod}
+            onChange={(value: 'email' | 'phone') => setAuthMethod(value)}
+            data={[
+              { label: 'Email', value: 'email' },
+              { label: 'Phone', value: 'phone' },
+            ]}
+            fullWidth
+          />
+
+          {authMethod === 'email' ? (
+            <TextInput
+              label="📧 Email"
+              placeholder="Enter your email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
+              required
+            />
+          ) : (
+            <TextInput
+              label="📱 Phone Number"
+              placeholder="+1234567890"
+              value={phone}
+              onChange={(e) => setPhone(e.currentTarget.value)}
+              required
+            />
+          )}
+
+          <PasswordInput
+            label="🔐 Password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
             required
           />
-          <TextInput
-            label="Last Name"
-            placeholder="Enter last name"
-            value={lastName}
-            onChange={(e) => setLastName(e.currentTarget.value)}
-            required
+
+          <Select
+            label="⚽ Position"
+            placeholder="Select position"
+            data={[
+              { value: 'Goalkeeper', label: 'Goalkeeper' },
+              { value: 'Defender', label: 'Defender' },
+              { value: 'Midfielder', label: 'Midfielder' },
+              { value: 'Forward', label: 'Forward' },
+            ]}
+            value={position}
+            onChange={setPosition}
+            clearable
           />
-        </Group>
 
-        <TextInput
-          label="📧 Email"
-          placeholder="Enter your email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.currentTarget.value)}
-          required
-          mb="md"
-        />
+          <Button fullWidth color="green" size="md" onClick={handleRegister} loading={loading}>
+            ✅ Register
+          </Button>
 
-        <PasswordInput
-          label="🔐 Password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.currentTarget.value)}
-          required
-          mb="md"
-        />
-
-        <Select
-          label="⚽ Position"
-          placeholder="Select position"
-          data={[
-            { value: 'Goalkeeper', label: 'Goalkeeper' },
-            { value: 'Defender', label: 'Defender' },
-            { value: 'Midfielder', label: 'Midfielder' },
-            { value: 'Forward', label: 'Forward' },
-          ]}
-          value={position}
-          onChange={setPosition}
-          clearable
-          mb="md"
-        />
-
-        {error && (
-          <Text c="red" size="sm" ta="center" mb="sm">
-            {error}
+          <Text ta="center" size="sm" mt="md">
+            Already have an account?{' '}
+            <Anchor href="/login" className="text-blue-600 underline">
+              Login
+            </Anchor>
           </Text>
-        )}
-
-        <Button fullWidth color="green" size="md" onClick={handleRegister} mt="md">
-          ✅ Register
-        </Button>
-
-        <Text ta="center" size="sm" mt="md">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-600 underline">
-            Login
-          </a>
-        </Text>
+        </Stack>
       </Paper>
     </main>
   )

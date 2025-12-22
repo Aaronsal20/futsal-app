@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   TextInput,
@@ -13,38 +13,72 @@ import {
   Container,
   Stack,
   rem,
-  Image
+  Image,
+  SegmentedControl
 } from '@mantine/core';
 import { IconArrowLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 import { notifications } from '@mantine/notifications';
 
-export default function LoginPage() {
+function LoginForm() {
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'pending_approval') {
+      notifications.show({ 
+        title: 'Account Pending', 
+        message: 'Your account is waiting for admin approval.', 
+        color: 'yellow' 
+      });
+    }
+  }, [searchParams]);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if ((authMethod === 'email' && !email) || (authMethod === 'phone' && !phone) || !password) {
       notifications.show({ title: 'Error', message: 'Please fill in all fields', color: 'red' });
       return;
     }
     
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
+    const { data, error } = await supabase.auth.signInWithPassword(
+      authMethod === 'email' 
+        ? { email, password } 
+        : { phone, password }
+    );
 
     if (error) {
+      setLoading(false);
       notifications.show({ title: 'Error', message: error.message, color: 'red' });
-    } else {
-      notifications.show({ title: 'Success', message: 'Logged in successfully', color: 'green' });
-      router.push('/');
-      router.refresh();
+      return;
     }
+
+    // Check approval status
+    if (data.user) {
+      const isApproved = data.user.user_metadata.is_approved;
+      
+      if (isApproved === false) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        notifications.show({ 
+          title: 'Account Pending', 
+          message: 'Your account is waiting for admin approval.', 
+          color: 'yellow' 
+        });
+        return;
+      }
+    }
+
+    setLoading(false);
+    notifications.show({ title: 'Success', message: 'Logged in successfully', color: 'green' });
+    router.push('/');
+    router.refresh();
   };
 
   return (
@@ -70,13 +104,34 @@ export default function LoginPage() {
           <Paper withBorder shadow="md" p={30} radius="md">
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
               <Stack>
-                <TextInput
-                  label="Email"
-                  placeholder="you@example.com"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.currentTarget.value)}
+                <SegmentedControl
+                  value={authMethod}
+                  onChange={(value: 'email' | 'phone') => setAuthMethod(value)}
+                  data={[
+                    { label: 'Email', value: 'email' },
+                    { label: 'Phone', value: 'phone' },
+                  ]}
+                  fullWidth
                 />
+
+                {authMethod === 'email' ? (
+                  <TextInput
+                    label="Email"
+                    placeholder="you@example.com"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.currentTarget.value)}
+                  />
+                ) : (
+                  <TextInput
+                    label="Phone Number"
+                    placeholder="+1234567890"
+                    required
+                    value={phone}
+                    onChange={(event) => setPhone(event.currentTarget.value)}
+                  />
+                )}
+
                 <PasswordInput
                   label="Password"
                   placeholder="Your password"
@@ -131,5 +186,13 @@ export default function LoginPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
