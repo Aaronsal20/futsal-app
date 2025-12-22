@@ -340,8 +340,10 @@ export default function TeamsPage() {
                     disabled={selected.length !== 15}
                     leftSection={<IconUsersGroup size={20} />}
                     px="xl"
+                    variant="gradient"
+                    gradient={{ from: 'blue', to: 'cyan', deg: 90 }}
                   >
-                    Generate Teams ({selected.length}/15)
+                    Generate Balanced Teams (AI)
                   </Button>
                </Paper>
             </Box>
