@@ -136,7 +136,7 @@ export default function Navbar() {
 
         {/* MAIN LINKS */}
         <ScrollArea className={classes.links}>
-          {mainLinks.map((item) => (
+          {session && mainLinks.map((item) => (
             <Link 
               key={item.link} 
               href={item.link} 

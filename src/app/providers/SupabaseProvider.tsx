@@ -20,7 +20,7 @@ export default function SupabaseProvider({
     } = supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         // Check if current path is protected
-        const protectedPaths = ['/players', '/players/rate', '/admin', '/profile'];
+        const protectedPaths = ['/players', '/players/rate', '/admin', '/profile', '/teams'];
         const isProtected = protectedPaths.some((path) =>
           pathname === path || pathname?.startsWith(`${path}/`)
         );
