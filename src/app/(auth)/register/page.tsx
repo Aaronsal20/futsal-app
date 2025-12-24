@@ -12,7 +12,6 @@ import {
   Title,
   Text,
   Group,
-  SegmentedControl,
   Stack,
   Anchor
 } from '@mantine/core'
@@ -21,9 +20,7 @@ import { notifications } from '@mantine/notifications'
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [position, setPosition] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -41,17 +38,15 @@ export default function RegisterPage() {
             first_name: firstName,
             last_name: lastName,
             position,
-            phone: authMethod === 'phone' ? phone : undefined,
             is_approved: false
           },
         },
       }
 
-      const { data, error: signUpError } = await supabase.auth.signUp(
-        authMethod === 'email' 
-          ? { email, ...signUpPayload } 
-          : { phone, ...signUpPayload }
-      )
+      const { data, error: signUpError } = await supabase.auth.signUp({ 
+        email, 
+        ...signUpPayload 
+      })
 
       if (signUpError) throw signUpError
 
@@ -87,8 +82,7 @@ export default function RegisterPage() {
         // Step 3: Insert user into `users` table with player link
         const { error: insertUserError } = await supabase.from('users').insert({
           id: data.user.id,
-          email: authMethod === 'email' ? email : null,
-          phone: authMethod === 'phone' ? phone : null,
+          email: email,
           first_name: firstName,
           last_name: lastName,
           is_approved: false,
@@ -139,34 +133,14 @@ export default function RegisterPage() {
             />
           </Group>
 
-          <SegmentedControl
-            value={authMethod}
-            onChange={(value: 'email' | 'phone') => setAuthMethod(value)}
-            data={[
-              { label: 'Email', value: 'email' },
-              { label: 'Phone', value: 'phone' },
-            ]}
-            fullWidth
+          <TextInput
+            label="📧 Email"
+            placeholder="Enter your email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.currentTarget.value)}
+            required
           />
-
-          {authMethod === 'email' ? (
-            <TextInput
-              label="📧 Email"
-              placeholder="Enter your email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.currentTarget.value)}
-              required
-            />
-          ) : (
-            <TextInput
-              label="📱 Phone Number"
-              placeholder="+1234567890"
-              value={phone}
-              onChange={(e) => setPhone(e.currentTarget.value)}
-              required
-            />
-          )}
 
           <PasswordInput
             label="🔐 Password"
