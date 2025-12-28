@@ -59,8 +59,29 @@ function LoginForm() {
       return;
     }
 
-    // Check approval status
+    // Check approval status and ensure profile exists
     if (data.user) {
+      // Self-healing: Ensure public.users record exists BEFORE checking approval
+      // This ensures admins can see the user in the dashboard to approve them
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', data.user.id)
+        .single();
+
+      if (!userProfile) {
+        const metadata = data.user.user_metadata;
+        await supabase.from('users').insert({
+          id: data.user.id,
+          email: data.user.email,
+          phone: data.user.phone,
+          first_name: metadata.first_name,
+          last_name: metadata.last_name,
+          is_approved: metadata.is_approved ?? false,
+          player_id: metadata.player_id
+        });
+      }
+
       const isApproved = data.user.user_metadata.is_approved;
       
       if (isApproved === false) {
@@ -73,6 +94,8 @@ function LoginForm() {
         });
         return;
       }
+
+
     }
 
     setLoading(false);
